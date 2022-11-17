@@ -1,25 +1,27 @@
-/*
-  Rui Santos
-  Complete project details at Complete project details at https://RandomNerdTutorials.com/esp8266-nodemcu-http-get-post-arduino/
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files.
-  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-  
-  Code compatible with ESP8266 Boards Version 3.0.0 or above 
-  (see in Tools > Boards > Boards Manager > ESP8266)
-*/
-
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
+#include <ESP8266WebServer.h>
+#include <DNSServer.h>
+#include <ArduinoJson.h>
 
-char ssid[] = "MAKERINDO2"; 
-char password[] = "makerindo2019";
+char ssid[] = "Family"; 
+char password[] = "kf3092907";
 
-const char* serverName = "http://18.217.56.118:8069/kedaireka/iot";
+const char* serverName = "http://18.217.56.118:8069/kedaireka/iot/add";
+
+const char data[] = "{\"bahan_id\":\"1\",\"temperatur\":\"24.25\",\"kelembapan\":\"49.54\"}";
+// Json data to send to the server
 
 unsigned long lastTime = 0;
-unsigned long timerDelay = 5000;
+unsigned long timerDelay = 20000;
+
+int bahan_id = 1;
+float temperatur = 0;
+float kelembapan = 0;
+
+DynamicJsonDocument doc(1024);
+
 
 void setup() {
   Serial.begin(115200);
@@ -38,6 +40,11 @@ void setup() {
 }
 
 void loop() {
+  // random int for temperature and kelembaban
+  temperatur = random(20, 37);
+  kelembapan = random(40, 60);
+  
+  
   //Send an HTTP POST request every 10 minutes
   if ((millis() - lastTime) > timerDelay) {
     //Check WiFi connection status
@@ -51,10 +58,14 @@ void loop() {
       // If you need Node-RED/server authentication, insert user and password below
       //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
   
-      
+      doc["bahan_id"] = bahan_id;
+      doc["temperatur"]   = temperatur;
+      doc["kelembapan"] = kelembapan;
+
+      serializeJson(doc, Serial);
       // If you need an HTTP request with a content type: application/json, use the following:
       http.addHeader("Content-Type", "application/json");
-      int httpResponseCode = http.POST("{\"bahan_id\":\"1\",\"kandungan_air\":\"12\",\"temperatur\":\"24.25\",\"kelembapan\":\"49.54\"}");
+      int httpResponseCode = http.POST(doc.as<String>());
 
       // If you need an HTTP request with a content type: text/plain
       //http.addHeader("Content-Type", "text/plain");
