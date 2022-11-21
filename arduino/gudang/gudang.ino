@@ -1,8 +1,5 @@
 // Oven Gudang
 
-
-#include <Arduino.h>
-
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
@@ -32,7 +29,7 @@ void setup()
     WiFiManager wifiManager;
     wifiManager.setBreakAfterConfig(true);
 
-    if (!wifiManager.autoConnect("Gudang-SPU-Kedaireka")) {
+    if (!wifiManager.autoConnect("SPU-Kedaireka")) {
         Serial.println("failed to connect, we should reset as see if it connects");
         delay(3000);
         ESP.reset();

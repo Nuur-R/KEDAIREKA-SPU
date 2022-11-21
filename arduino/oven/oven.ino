@@ -1,5 +1,4 @@
-// Oven Gudang
-
+// Oven Code
 
 #include <Arduino.h>
 
@@ -32,7 +31,7 @@ void setup()
     WiFiManager wifiManager;
     wifiManager.setBreakAfterConfig(true);
 
-    if (!wifiManager.autoConnect("Gudang-SPU-Kedaireka")) {
+    if (!wifiManager.autoConnect("SPU-Kedaireka")) {
         Serial.println("failed to connect, we should reset as see if it connects");
         delay(3000);
         ESP.reset();
@@ -47,7 +46,7 @@ void setup()
 
 void loop()
 {
-    temperatur = random(20, 37);
+    temperatur = random(150, 200);
     kelembapan = random(40, 60);
 
     if ((millis() - lastTime) > timerDelay)
@@ -66,11 +65,18 @@ void loop()
             doc["params"]["args"][0] = "odoo_14_0";
             doc["params"]["args"][1] = 2;
             doc["params"]["args"][2] = "nimda0";
-            doc["params"]["args"][3] = "kedaireka.iot";
+            doc["params"]["args"][3] = "kedaireka.oven.monitoring";
             doc["params"]["args"][4] = "create";
+            doc["params"]["args"][5][0]["oven_id"] = 2;
+            doc["params"]["args"][5][0]["bahan_id"] = 1;
+            doc["params"]["args"][5][0]["pegawai_id"] = 1;
+            doc["params"]["args"][5][0]["volume"] = 5.0;
+            doc["params"]["args"][5][0]["oven_on"] = "2022-11-17 05:10:40";
+            doc["params"]["args"][5][0]["oven_off"] = "2022-11-17 05:15:40";
+            doc["params"]["args"][5][0]["durasi_proses_oven"] = 5;
             doc["params"]["args"][5][0]["temperatur"] = temperatur;
             doc["params"]["args"][5][0]["kelembapan"] = kelembapan;
-            doc["id"] = 1;
+            doc["params"]["args"][5][0]["status_kualitas"] = "ok";
             String json;
             serializeJson(doc, json);
 
