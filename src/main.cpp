@@ -1,3 +1,4 @@
+// Node01
 // Gudang
 
 #include <Arduino.h>
@@ -21,11 +22,12 @@
 const char *serverName = "http://18.217.56.118:8069/jsonrpc";
 
 unsigned long lastTime = 0;
-unsigned long timerDelay = 15000;
+unsigned long timerDelay = 20000;
 unsigned long displayTime = 2000;
 String nodeName = "Node01-Gudang";
 String accessPointIP = "192.158.4.1";
 
+#define BUZZ D8
 #define DHTPIN D4 
 #define DHTTYPE DHT22
 DHT_Unified dht(DHTPIN, DHTTYPE);
@@ -35,10 +37,15 @@ uint32_t delayMS;
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
- 
+
+void buzz(int pin, int delayTime, int repeat);
+void sendData();
+
 int bahan_id = 1;
 float temperatur = 0;
 float kelembapan = 0;
+float suhu_min = 23;
+float suhu_max = 34;
 
 
 
@@ -46,9 +53,12 @@ DynamicJsonDocument doc(1024);
 
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(115200);
     WiFiManager wifiManager;
     wifiManager.setBreakAfterConfig(true);
+
+    pinMode(BUZZ, OUTPUT);
+    digitalWrite(BUZZ, LOW);
 
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
     display.clearDisplay();
@@ -109,63 +119,128 @@ void loop()
       kelembapan = event.relative_humidity;
     }
 
+    if (temperatur <= suhu_min){
+        buzz(D5, 1000, 3);
+        display.clearDisplay();
+        display.setTextSize(2);
+        display.setTextColor(WHITE);
+        display.setCursor(0,0);
+        display.println("Dingin...");
+        display.setTextSize(1);
+        display.setCursor(0,20);
+        display.println("Temperature\t: ");
+        display.setCursor(0,30);
+        display.println(temperatur);
+        display.setCursor(0,40);
+        display.println("Humidity\t: ");
+        display.setCursor(0,50);
+        display.println(kelembapan);
+        display.display();
+        delay(displayTime);
+    }
+    else if(temperatur >= suhu_max)
+    {
+        buzz(D5, 500, 6);
+        display.clearDisplay();
+        display.setTextSize(2);
+        display.setTextColor(WHITE);
+        display.setCursor(0,0);
+        display.println("Panas...");
+        display.setTextSize(1);
+        display.setCursor(0,20);
+        display.println("Temperature\t: ");
+        display.setCursor(0,30);
+        display.println(temperatur);
+        display.setCursor(0,40);
+        display.println("Humidity\t: ");
+        display.setCursor(0,50);
+        display.println(kelembapan);
+        display.display();
+        delay(displayTime);
+    }
+    else
+    {
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      display.setCursor(0,0);
+      display.println("Temperature: ");
+      display.setCursor(0,10);
+      display.println(temperatur);
+      display.setCursor(0,20);
+      display.println("Humidity: ");
+      display.setCursor(0,30);
+      display.println(kelembapan);
+      display.display();
+      delay(100);
+    }
+
+    if (millis() - lastTime > timerDelay)
+    {
+        lastTime = millis();
+        sendData();
+    }
+}
+
+void buzz(int pin, int delayTime, int repeat)
+{
+    for (int i = 0; i < repeat; i++)
+    {
+        digitalWrite(pin, LOW);
+        delay(delayTime);
+        digitalWrite(pin, HIGH);
+        delay(delayTime);
+    }
+}
+
+void sendData()
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFiClient client;
+    HTTPClient http;
+
+    http.begin(client, serverName);
+
+    doc["jsonrpc"] = "2.0";
+    doc["method"] = "call";
+    doc["params"]["service"] = "object";
+    doc["params"]["method"] = "execute_kw";
+    doc["params"]["args"][0] = "odoo_14_0";
+    doc["params"]["args"][1] = 2;
+    doc["params"]["args"][2] = "nimda0";
+    doc["params"]["args"][3] = "kedaireka.iot";
+    doc["params"]["args"][4] = "create";
+    doc["params"]["args"][5][0]["temperatur"] = temperatur;
+    doc["params"]["args"][5][0]["kelembapan"] = kelembapan;
+    doc["id"] = 1;
+    String json;
+    serializeJson(doc, json);
+
+    http.addHeader("Content-Type", "application/json");
+    int httpResponseCode = http.POST(doc.as<String>());
+
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(WHITE);
-    display.setCursor(0,0);
-    display.println("Temperature: ");
-    display.setCursor(0,10);
-    display.println(temperatur);
-    display.setCursor(0,20);
-    display.println("Humidity: ");
-    display.setCursor(0,30);
-    display.println(kelembapan);
+    display.setCursor(0, 0);
+    display.println("Send Data");
     display.display();
     delay(displayTime);
-
-
-    if ((millis() - lastTime) > timerDelay)
-    {
-        if (WiFi.status() == WL_CONNECTED)
-        {
-            WiFiClient client;
-            HTTPClient http;
-
-            http.begin(client, serverName);
-
-            doc["jsonrpc"] = "2.0";
-            doc["method"] = "call";
-            doc["params"]["service"] = "object";
-            doc["params"]["method"] = "execute_kw";
-            doc["params"]["args"][0] = "odoo_14_0";
-            doc["params"]["args"][1] = 2;
-            doc["params"]["args"][2] = "nimda0";
-            doc["params"]["args"][3] = "kedaireka.iot";
-            doc["params"]["args"][4] = "create";
-            doc["params"]["args"][5][0]["temperatur"] = temperatur;
-            doc["params"]["args"][5][0]["kelembapan"] = kelembapan;
-            doc["id"] = 1;
-            String json;
-            serializeJson(doc, json);
-
-            http.addHeader("Content-Type", "application/json");
-            int httpResponseCode = http.POST(doc.as<String>());
-
-            Serial.print("HTTP Response code: ");
-            Serial.println(httpResponseCode);
-            display.clearDisplay();
-            display.setTextSize(1);
-            display.setTextColor(WHITE);
-            display.setCursor(0,0);
-            display.println("Send Data");
-            display.display();
-            delay(displayTime);
-            http.end();
-        }
-        else
-        {
-            Serial.println("WiFi Disconnected");
-        }
-        lastTime = millis();
-    }
+    http.end();
+  }
+  else
+  {
+    Serial.println("WiFi Disconnected");
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 0);
+    display.println("WiFi Disconnected");
+    display.display();
+    delay(displayTime);
+  }
+  lastTime = millis();
 }
