@@ -1,5 +1,5 @@
-// Node01
-// Gudang
+// Node02
+// Oven
 
 #include <Arduino.h>
 
@@ -17,6 +17,7 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
+#include "max6675.h"
 
 
 const char *serverName = "http://18.217.56.118:8069/jsonrpc";
@@ -27,11 +28,17 @@ unsigned long displayTime = 2000;
 String nodeName = "Node01-Gudang";
 String accessPointIP = "192.158.4.1";
 
-#define BUZZPIN D8
-#define DHTPIN D4 
-#define DHTTYPE DHT22
-DHT_Unified dht(DHTPIN, DHTTYPE);
-uint32_t delayMS;
+#define BUZZPIN D0
+int thermoSO_satu  = D6;
+int thermoCS_satu = D7;
+int thermoCSK_satu  = D8;
+
+int thermoSO_dua  = D3;
+int thermoCS_dua = D4;
+int thermoCSK_dua  = D5;
+
+MAX6675 thermocouple_satu(thermoCSK_satu, thermoCS_satu, thermoSO_satu);
+MAX6675 thermocouple_dua(thermoCSK_dua, thermoCS_dua, thermoSO_dua);
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -39,14 +46,11 @@ uint32_t delayMS;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 void buzz(int pin, int delayTime, int repeat);
-void sendData();
+void sendData(int id, float suhu, float humidity);
 
 int bahan_id = 1;
-float temperatur = 0;
-float kelembapan = 0;
-float suhu_min = 24;
-float suhu_max = 37;
-
+float temperatur_oven1 = 0;
+float temperatur_oven2 = 0;
 
 
 DynamicJsonDocument doc(1024);
@@ -95,91 +99,36 @@ void setup()
     display.display();
     buzz(BUZZPIN, 700, 3);
     Serial.println(WiFi.localIP());
-    Serial.println("Timer set to 20 seconds (timerDelay variable), it will take 20ö seconds before publishing the first reading.");
+    Serial.println("Timer set to 20 seconds (timerDelay variable), it will take 20 seconds before publishing the first reading.");
 
-    dht.begin();
-    Serial.println(F("DHTxx Unified Sensor Example"));
 }
 
 void loop()
 {
-    sensors_event_t event;
-    dht.temperature().getEvent(&event);
-    if (isnan(event.temperature)) {
-      Serial.println(F("Error reading temperature!"));
-    }
-    else {
-      temperatur = event.temperature;
-    }
-    // Get humidity event and print its value.
-    dht.humidity().getEvent(&event);
-    if (isnan(event.relative_humidity)) {
-      Serial.println(F("Error reading humidity!"));
-    }
-    else {
-      kelembapan = event.relative_humidity;
-    }
 
-    if (temperatur <= suhu_min){
-        buzz(BUZZPIN, 1000, 3);
-        display.clearDisplay();
-        display.setTextSize(2);
-        display.setTextColor(WHITE);
-        display.setCursor(0,0);
-        display.println("Dingin...");
-        display.setTextSize(1);
-        display.setCursor(0,20);
-        display.println("Temperature\t: ");
-        display.setCursor(0,30);
-        display.println(temperatur);
-        display.setCursor(0,40);
-        display.println("Humidity\t: ");
-        display.setCursor(0,50);
-        display.println(kelembapan);
-        display.display();
-        delay(displayTime);
-    }
-    else if(temperatur >= suhu_max)
-    {
-        buzz(BUZZPIN, 300, 5);
-        display.clearDisplay();
-        display.setTextSize(2);
-        display.setTextColor(WHITE);
-        display.setCursor(0,0);
-        display.println("Panas...");
-        display.setTextSize(1);
-        display.setCursor(0,20);
-        display.println("Temperature\t: ");
-        display.setCursor(0,30);
-        display.println(temperatur);
-        display.setCursor(0,40);
-        display.println("Humidity\t: ");
-        display.setCursor(0,50);
-        display.println(kelembapan);
-        display.display();
-        delay(displayTime);
-    }
-    else
-    {
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(0,0);
-      display.println("Temperature: ");
-      display.setCursor(0,10);
-      display.println(temperatur);
-      display.setCursor(0,20);
-      display.println("Humidity: ");
-      display.setCursor(0,30);
-      display.println(kelembapan);
-      display.display();
-      delay(100);
-    }
+  temperatur_oven1 = thermocouple_satu.readCelsius();
+  temperatur_oven2 = thermocouple_dua.readCelsius();
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(WHITE);
+    display.setCursor(0,0);
+    display.println("Dingin...");
+    display.setTextSize(1);
+    display.setCursor(0,20);
+    display.println("oven 1 : ");
+    display.setCursor(0,30);
+    display.println(temperatur_oven1);
+    display.setCursor(0,40);
+    display.println("oven 2 : ");
+    display.setCursor(0,50);
+    display.println(temperatur_oven2);
+    display.display();
+    delay(displayTime);
 
     if (millis() - lastTime > timerDelay)
     {
         lastTime = millis();
-        sendData();
+        sendData(1, temperatur_oven1, 1);
     }
 }
 
@@ -194,9 +143,9 @@ void buzz(int pin, int delayTime, int repeat)
     }
 }
 
-void sendData()
+void sendData(int id, float suhu, float humidity)
 {
-  if (WiFi.status() == WL_CONNECTED)
+  if (WiFi.status() == WL_CONNECTED)  
   {
     WiFiClient client;
     HTTPClient http;
@@ -208,12 +157,12 @@ void sendData()
     doc["params"]["service"] = "object";
     doc["params"]["method"] = "execute_kw";
     doc["params"]["args"][0] = "odoo_14_0";
-    doc["params"]["args"][1] = 2;
+    doc["params"]["args"][1] = id;
     doc["params"]["args"][2] = "nimda0";
     doc["params"]["args"][3] = "kedaireka.iot";
     doc["params"]["args"][4] = "create";
-    doc["params"]["args"][5][0]["temperatur"] = temperatur;
-    doc["params"]["args"][5][0]["kelembapan"] = kelembapan;
+    doc["params"]["args"][5][0]["temperatur"] = suhu;
+    doc["params"]["args"][5][0]["kelembapan"] = humidity;
     doc["id"] = 1;
     String json;
     serializeJson(doc, json);
