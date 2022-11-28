@@ -8,5 +8,5 @@ NODE01	Gudang
 NODE02	Oven
 NODE03	Shrink
 NODE04	Mesin Auger
-NODE05	Mesin Ertikal
+NODE05	Mesin Vertikal
 NODE06	Mesin Mixing
