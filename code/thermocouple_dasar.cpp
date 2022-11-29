@@ -60,14 +60,15 @@ void wifiConnectedDisplay();
 void ovenDisplay(String status, float temperature);
 void powerDisplay(float arus, float daya);
 
-String lokasi = "Ruang Packing";
-String node = "Node04";
-String nama_mesin = "Mesin Auger";
+String lokasi = "Ruang Oven";
+String node = "Node02";
+String nama_mesin = "Mesin Oven 1";
 String nodeName = node + "-" + nama_mesin;
 String accessPointIP = "192.168.4.1";
 
 int bahan_id = 1;
-int oven_id = 19;
+int oven_id = 18;
+
 float suhu_min = 24;
 float suhu_max = 37;
 float temperatur_oven = 0;
@@ -272,7 +273,7 @@ void sendData(float temperatur,
     doc["params"]["args"][5][0]["cycle"] = cycle;
     doc["params"]["args"][5][0]["daya"] = daya;
     doc["params"]["args"][5][0]["lokasi"] = lokasi;
-    doc["params"]["args"][5][0]["oven_id"] = oven_id;
+    doc["params"]["args"][5][0]["oven_id"] = nama_mesin;
     doc["params"]["args"][5][0]["pegawai_id"] = pegawai_id;
     doc["params"]["args"][5][0]["status_power"] = status_power;
     doc["params"]["args"][5][0]["t_off"] = "2022-11-25 11:17:39";

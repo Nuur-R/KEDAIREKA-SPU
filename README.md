@@ -5,8 +5,9 @@ https://randomnerdtutorials.com/arduino-k-type-thermocouple-max6675/
 https://indobot.co.id/blog/membaca-arus-ac-dengan-arduino-dan-sensor-arus-acs712/
 
 NODE01	Gudang
-NODE02	Oven
+NODE02	Oven 1
 NODE03	Shrink
 NODE04	Mesin Auger
 NODE05	Mesin Vertikal
 NODE06	Mesin Mixing
+NODE07	Oven 2

@@ -59,7 +59,7 @@ String lokasi = "Gudang";
 String node = "Node05";
 String nama_mesin = "Mesin Vertikal";
 String nodeName = node + "-" + nama_mesin;
-String accessPointIP = "192.158.4.1";
+String accessPointIP = "192.168.4.1";
 
 int bahan_id = 1;
 

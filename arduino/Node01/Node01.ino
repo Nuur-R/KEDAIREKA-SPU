@@ -25,7 +25,7 @@ unsigned long lastTime = 0;
 unsigned long timerDelay = 20000;
 unsigned long displayTime = 2000;
 String nodeName = "Node01-Gudang";
-String accessPointIP = "192.158.4.1";
+String accessPointIP = "192.168.4.1";
 
 #define BUZZPIN D8
 #define DHTPIN D4 
