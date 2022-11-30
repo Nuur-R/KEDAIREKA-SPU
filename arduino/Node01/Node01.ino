@@ -19,10 +19,10 @@
 #include <DHT_U.h>
 
 
-const char *serverName = "http://18.217.56.118:8069/jsonrpc";
+const char *serverName = "http://103.172.204.18:8069/jsonrpc";
 
 unsigned long lastTime = 0;
-unsigned long timerDelay = 20000;
+unsigned long timerDelay = 60000*30;
 unsigned long displayTime = 2000;
 String nodeName = "Node01-Gudang";
 String accessPointIP = "192.168.4.1";
@@ -207,9 +207,9 @@ void sendData()
     doc["method"] = "call";
     doc["params"]["service"] = "object";
     doc["params"]["method"] = "execute_kw";
-    doc["params"]["args"][0] = "odoo_14_0";
-    doc["params"]["args"][1] = 2;
-    doc["params"]["args"][2] = "nimda0";
+    doc["params"]["args"][0] = "new_spu";
+    doc["params"]["args"][1] = 44;
+    doc["params"]["args"][2] = "12341234";
     doc["params"]["args"][3] = "kedaireka.iot";
     doc["params"]["args"][4] = "create";
     doc["params"]["args"][5][0]["temperatur"] = temperatur;

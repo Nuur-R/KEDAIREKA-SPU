@@ -21,10 +21,10 @@
 #include <max6675.h>
 
 
-const char *serverName = "http://18.217.56.118:8069/jsonrpc";
+const char *serverName = "http://103.172.204.18:8069/jsonrpc";
 
 unsigned long lastTime = 0;
-unsigned long timerDelay = 60000*15;
+unsigned long timerDelay = 60000*30;
 unsigned long displayTime = 2000;
 
 #define BUZZPIN D0
@@ -67,7 +67,7 @@ String nodeName = node + "-" + nama_mesin;
 String accessPointIP = "192.168.4.1";
 
 int bahan_id = 1;
-int oven_id = 18;
+int oven_id = 4;
 
 float suhu_min = 24;
 float suhu_max = 37;
@@ -261,9 +261,9 @@ void sendData(float temperatur,
     doc["method"] = "call";
     doc["params"]["service"] = "object";
     doc["params"]["method"] = "execute_kw";
-    doc["params"]["args"][0] = "odoo_14_0";
-    doc["params"]["args"][1] = 2;
-    doc["params"]["args"][2] = "nimda0";
+    doc["params"]["args"][0] = "new_spu";
+    doc["params"]["args"][1] = 44;
+    doc["params"]["args"][2] = "12341234";
     doc["params"]["args"][3] = "kedaireka.mesin.monitoring";
     doc["params"]["args"][4] = "create";
     doc["params"]["args"][5][0]["temperatur"] = temperatur;
@@ -273,7 +273,7 @@ void sendData(float temperatur,
     doc["params"]["args"][5][0]["cycle"] = cycle;
     doc["params"]["args"][5][0]["daya"] = daya;
     doc["params"]["args"][5][0]["lokasi"] = lokasi;
-    doc["params"]["args"][5][0]["oven_id"] = nama_mesin;
+    doc["params"]["args"][5][0]["oven_id"] = oven_id;
     doc["params"]["args"][5][0]["pegawai_id"] = pegawai_id;
     doc["params"]["args"][5][0]["status_power"] = status_power;
     doc["params"]["args"][5][0]["t_off"] = "2022-11-25 11:17:39";

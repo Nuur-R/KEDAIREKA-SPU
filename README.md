@@ -11,3 +11,10 @@ NODE04	Mesin Auger
 NODE05	Mesin Vertikal
 NODE06	Mesin Mixing
 NODE07	Oven 2
+
+1 - Auger
+2 - Mixing
+3 - Vertikal
+4 - Oven
+5 - Shrink
+6 - Oven 2
