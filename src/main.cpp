@@ -62,6 +62,7 @@ void dhtDisplay(String status, float temperatur, float kelembapan);
 void powerDisplay(float arus, float daya);
 void cycleDisplay(int cycle);
 void ICACHE_RAM_ATTR impulseCount(void);
+void getData();
 
 String lokasi = "Ruang Packing";
 String node = "Node03";
@@ -141,83 +142,84 @@ void setup()
 
 void loop()
 {
-  sensors_event_t event;
-  dht.temperature().getEvent(&event);
-  if (isnan(event.temperature)) {
-    Serial.println(F("Error reading temperature!"));
-  } else {
-    temperatur = event.temperature;
-  }
-  dht.humidity().getEvent(&event);
-  if (isnan(event.relative_humidity)) {
-    Serial.println(F("Error reading humidity!"));
-  } else {
-    kelembapan = event.relative_humidity;
-  }
+  // sensors_event_t event;
+  // dht.temperature().getEvent(&event);
+  // if (isnan(event.temperature)) {
+  //   Serial.println(F("Error reading temperature!"));
+  // } else {
+  //   temperatur = event.temperature;
+  // }
+  // dht.humidity().getEvent(&event);
+  // if (isnan(event.relative_humidity)) {
+  //   Serial.println(F("Error reading humidity!"));
+  // } else {
+  //   kelembapan = event.relative_humidity;
+  // }
 
-  float mA = ACS.mA_AC();
-  Serial.println(mA);
+  // float mA = ACS.mA_AC();
+  // Serial.println(mA);
 
-    if (bstat == true)
-    {
-      cycle++;
-      delay(500);
-      bstat = false;
-    }
+  //   if (bstat == true)
+  //   {
+  //     cycle++;
+  //     delay(500);
+  //     bstat = false;
+  //   }
 
 
-  // arus mA ke ampare
-  arus = mA / 1000;
-  // menghitung daya listrik dari Mili Ampare dan tegangan
-  daya = arus * tegangan;
-  // menghitung biaya listrik dari daya listrik dan waktu
-  biaya_listrik = daya * 0.000001 * 15;
-  // menghitung total produksi dari volume dan cycle
-  total_produksi = volume * cycle;
-  // set status_power true jika arus lebih dari 0.23
-  status_power = arus >= 0.05 ? true : false;
+  // // arus mA ke ampare
+  // arus = mA / 1000;
+  // // menghitung daya listrik dari Mili Ampare dan tegangan
+  // daya = arus * tegangan;
+  // // menghitung biaya listrik dari daya listrik dan waktu
+  // biaya_listrik = daya * 0.000001 * 15;
+  // // menghitung total produksi dari volume dan cycle
+  // total_produksi = volume * cycle;
+  // // set status_power true jika arus lebih dari 0.23
+  // status_power = arus >= 0.05 ? true : false;
   
-  if (temperatur <= suhu_min)
-    {
-      buzz(BUZZPIN, 1000, 3);
-      dhtDisplay("Dingin...", temperatur, kelembapan);
-      delay(displayTime);
-    }
-  else if (temperatur >= suhu_max)
-    {
-      buzz(BUZZPIN, 300, 5);
-      dhtDisplay("Paanas...", temperatur, kelembapan);
-      delay(displayTime);
-    }
-  else
-    {
-      powerDisplay(arus, daya);
-      delay(2000);
-      cycleDisplay(cycle);
-      delay(2000);
-      dhtDisplay("Normal", temperatur, kelembapan);
-      delay(2000);
-    }
+  // if (temperatur <= suhu_min)
+  //   {
+  //     buzz(BUZZPIN, 1000, 3);
+  //     dhtDisplay("Dingin...", temperatur, kelembapan);
+  //     delay(displayTime);
+  //   }
+  // else if (temperatur >= suhu_max)
+  //   {
+  //     buzz(BUZZPIN, 300, 5);
+  //     dhtDisplay("Paanas...", temperatur, kelembapan);
+  //     delay(displayTime);
+  //   }
+  // else
+  //   {
+  //     powerDisplay(arus, daya);
+  //     delay(2000);
+  //     cycleDisplay(cycle);
+  //     delay(2000);
+  //     dhtDisplay("Normal", temperatur, kelembapan);
+  //     delay(2000);
+  //   }
 
-  if (millis() - lastTime > timerDelay)
-  {
-    lastTime = millis();
-    Serial.println("Publishing sensor values...");
-    sendData( temperatur,
-               kelembapan,
-               arus,
-               biaya_listrik,
-               cycle,
-               daya,
-               lokasi,
-               nama_mesin,
-               pegawai_id,
-               status_power,
-               tegangan,
-               total_produksi,
-               volume,
-               oven_id);    
-  }
+  // if (millis() - lastTime > timerDelay)
+  // {
+  //   lastTime = millis();
+  //   Serial.println("Publishing sensor values...");
+  //   sendData( temperatur,
+  //              kelembapan,
+  //              arus,
+  //              biaya_listrik,
+  //              cycle,
+  //              daya,
+  //              lokasi,
+  //              nama_mesin,
+  //              pegawai_id,
+  //              status_power,
+  //              tegangan,
+  //              total_produksi,
+  //              volume,
+  //              oven_id);    
+  // }
+  getData();
 }
 
 void buzz(int pin, int delayTime, int repeat)
@@ -385,4 +387,53 @@ void sendData(float temperatur,
     delay(displayTime);
   }
   lastTime = millis();
+}
+
+// fungsi  untuk mengambil data dari server menggunakan metode GET dengan 
+void getData()
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFiClient client;
+    HTTPClient http;
+
+    http.begin(client, serverName);
+
+    // struktur JSON {"jsonrpc": "2.0","method": "call","params": {"service": "object","method": "execute_kw","args": ["new_spu","44","12341234","ir.config_parameter","search_read",[[["key", "like", "kedaireka."]], ["key", "value"]]]},"id": 1668762772}
+    doc["jsonrpc"] = "2.0";
+    doc["method"] = "call";
+    doc["params"]["service"] = "object";
+    doc["params"]["method"] = "execute_kw";
+    doc["params"]["args"][0] = "new_spu";
+    doc["params"]["args"][1] = 44;
+    doc["params"]["args"][2] = "12341234";
+    doc["params"]["args"][3] = "ir.config_parameter";
+    doc["params"]["args"][4] = "search_read";
+    doc["params"]["args"][5][0][0] = "key";
+    doc["params"]["args"][5][0][1] = "like";
+    doc["params"]["args"][5][0][2] = "kedaireka.";
+    doc["params"]["args"][6][0] = "key";
+    doc["params"]["args"][6][1] = "value";
+    doc["id"] = 1668762772;
+
+    String json;
+    serializeJson(doc, json);
+
+    http.addHeader("Content-Type", "application/json");
+    int httpResponseCode = http.POST(doc.as<String>());
+
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+
+    String payload = http.getString();
+    Serial.println(payload);
+    // return payload as json
+    DeserializationError error = deserializeJson(doc, payload);
+    if (error)
+    {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.f_str());
+      return;
+    }
+  }
 }
