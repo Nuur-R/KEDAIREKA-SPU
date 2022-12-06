@@ -1,0 +1,210 @@
+{
+    "jsonrpc": "2.0",
+    "id": null,
+    "result": [
+        {
+            "id": 62,
+            "key": "kedaireka.kelas_pln",
+            "value": "1",
+            "display_name": "kedaireka.kelas_pln",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 55,
+            "key": "kedaireka.rh_max",
+            "value": "80",
+            "display_name": "kedaireka.rh_max",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 54,
+            "key": "kedaireka.rh_min",
+            "value": "60",
+            "display_name": "kedaireka.rh_min",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 59,
+            "key": "kedaireka.rh_ruang_max",
+            "value": "80",
+            "display_name": "kedaireka.rh_ruang_max",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 58,
+            "key": "kedaireka.rh_ruang_min",
+            "value": "60",
+            "display_name": "kedaireka.rh_ruang_min",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 57,
+            "key": "kedaireka.suhu_ruang_max",
+            "value": "30",
+            "display_name": "kedaireka.suhu_ruang_max",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 56,
+            "key": "kedaireka.suhu_ruang_min",
+            "value": "25.0",
+            "display_name": "kedaireka.suhu_ruang_min",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 63,
+            "key": "kedaireka.tdl",
+            "value": "1300.0",
+            "display_name": "kedaireka.tdl",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 53,
+            "key": "kedaireka.temperatur_max",
+            "value": "30",
+            "display_name": "kedaireka.temperatur_max",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 52,
+            "key": "kedaireka.temperatur_min",
+            "value": "25.0",
+            "display_name": "kedaireka.temperatur_min",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 61,
+            "key": "kedaireka.waktu_oven_max",
+            "value": "360",
+            "display_name": "kedaireka.waktu_oven_max",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        },
+        {
+            "id": 60,
+            "key": "kedaireka.waktu_oven_min",
+            "value": "30",
+            "display_name": "kedaireka.waktu_oven_min",
+            "create_uid": [
+                2,
+                "Administrator"
+            ],
+            "create_date": "2022-12-03 10:39:25",
+            "write_uid": [
+                2,
+                "Administrator"
+            ],
+            "write_date": "2022-12-03 10:39:25",
+            "__last_update": "2022-12-03 10:39:25"
+        }
+    ]
+}

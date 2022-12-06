@@ -189,7 +189,76 @@ void sendData(float temperatur,
   lastTime = millis();
 }
 
+// fuction for FETCH data from server and PARSE it to JSON
+void fetchData(){
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, serverName);
 
+    // json document dengan structure {"jsonrpc": "2.0","method": "call","params": {"service": "object","method": "execute_kw","args": ["new_spu","44","12341234","ir.config_parameter","search_read",[[["key", "like", "kedaireka."]], ["key", "value"]]]},"id": 1}
+
+
+    
+    doc["jsonrpc"] = "2.0";
+    doc["method"] = "call";
+    doc["params"]["service"] = "object";
+    doc["params"]["method"] = "execute_kw";
+    doc["params"]["args"][0] = "new_spu";
+    doc["params"]["args"][1] = 44;
+    doc["params"]["args"][2] = "12341234";
+    doc["params"]["args"][3] = "ir.config_parameter";
+    doc["params"]["args"][4] = "search_read";
+    doc["params"]["args"][5][0][0][0] = "key";
+    doc["params"]["args"][5][0][0][1] = "like";
+    doc["params"]["args"][5][0][0][2] = "kedaireka";
+    doc["params"]["args"][5][1][0] = "key";
+    doc["params"]["args"][5][1][1] = "value";
+    doc["id"] = 1;
+
+
+    String json;
+    serializeJson(doc, json);
+
+    http.addHeader("Content-Type", "application/json");
+    int httpResponseCode = http.POST(doc.as<String>());
+
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    String payload = http.getString();
+    Serial.println("Response: ");
+    Serial.println(payload);
+
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 0);
+    display.println("Fetch Data");
+    display.display();
+    delay(displayTime);
+
+    http.end();
+
+    // Parse JSON
+    StaticJsonDocument<200> doc;
+    deserializeJson(doc, payload);
+    JsonObject obj = doc.as<JsonObject>();
+    JsonArray result = obj["result"].as<JsonArray>();
+    JsonObject data = result[0].as<JsonObject>();
+  }
+  else
+  {
+    Serial.println("WiFi Disconnected");
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 0);
+    display.println("WiFi Disconnected");
+    display.display();
+    delay(displayTime);
+  }
+}
 
 void setup()
 {
@@ -259,71 +328,72 @@ float volume = 100;
 
 void loop()
 {
-  sensors_event_t event;
-  dht.temperature().getEvent(&event);
-  if (isnan(event.temperature)) {
-    Serial.println(F("Error reading temperature!"));
-  } else {
-    temperatur = event.temperature;
-  }
-  dht.humidity().getEvent(&event);
-  if (isnan(event.relative_humidity)) {
-    Serial.println(F("Error reading humidity!"));
-  } else {
-    kelembapan = event.relative_humidity;
-  }
+  // sensors_event_t event;
+  // dht.temperature().getEvent(&event);
+  // if (isnan(event.temperature)) {
+  //   Serial.println(F("Error reading temperature!"));
+  // } else {
+  //   temperatur = event.temperature;
+  // }
+  // dht.humidity().getEvent(&event);
+  // if (isnan(event.relative_humidity)) {
+  //   Serial.println(F("Error reading humidity!"));
+  // } else {
+  //   kelembapan = event.relative_humidity;
+  // }
 
-  float mA = ACS.mA_AC();
+  // float mA = ACS.mA_AC();
 
-    if (bstat == true)
-    {
-      cycle++;
-      delay(500);
-      bstat = false;
-    }
+  //   if (bstat == true)
+  //   {
+  //     cycle++;
+  //     delay(500);
+  //     bstat = false;
+  //   }
 
 
-  // arus mA ke ampare
-  arus = mA / 1000;
-  // menghitung daya listrik dari Mili Ampare dan tegangan
-  daya = arus * tegangan;
-  // menghitung total produksi dari volume dan cycle
-  total_produksi = volume * cycle;
-  // set status_power true jika arus lebih dari 0.23
-  status_power = arus >= 0.05 ? true : false;
+  // // arus mA ke ampare
+  // arus = mA / 1000;
+  // // menghitung daya listrik dari Mili Ampare dan tegangan
+  // daya = arus * tegangan;
+  // // menghitung total produksi dari volume dan cycle
+  // total_produksi = volume * cycle;
+  // // set status_power true jika arus lebih dari 0.23
+  // status_power = arus >= 0.05 ? true : false;
   
-  if (temperatur <= suhu_min)
-    {
-      mainDisplay("Dingin", temperatur, kelembapan, arus, daya, cycle);
-      buzz(BUZZPIN, 1000, 3);
-    }
-  else if (temperatur >= suhu_max)
-    {
-      mainDisplay("Panas", temperatur, kelembapan, arus, daya, cycle);
-      buzz(BUZZPIN, 300, 5);
-    }
-  else
-    {
-      mainDisplay("Normal", temperatur, kelembapan, arus, daya, cycle);
-    }
+  // if (temperatur <= suhu_min)
+  //   {
+  //     mainDisplay("Dingin", temperatur, kelembapan, arus, daya, cycle);
+  //     buzz(BUZZPIN, 1000, 3);
+  //   }
+  // else if (temperatur >= suhu_max)
+  //   {
+  //     mainDisplay("Panas", temperatur, kelembapan, arus, daya, cycle);
+  //     buzz(BUZZPIN, 300, 5);
+  //   }
+  // else
+  //   {
+  //     mainDisplay("Normal", temperatur, kelembapan, arus, daya, cycle);
+  //   }
 
-  if (millis() - lastTime > timerDelay)
-  {
-    lastTime = millis();
-    Serial.println("Publishing sensor values...");
-    sendData( temperatur,
-               kelembapan,
-               arus,
-               biaya_listrik,
-               cycle,
-               daya,
-               lokasi,
-               nama_mesin,
-               pegawai_id,
-               status_power,
-               tegangan,
-               total_produksi,
-               volume,
-               oven_id);    
-  }
+  // if (millis() - lastTime > timerDelay)
+  // {
+  //   lastTime = millis();
+  //   Serial.println("Publishing sensor values...");
+  //   sendData( temperatur,
+  //              kelembapan,
+  //              arus,
+  //              biaya_listrik,
+  //              cycle,
+  //              daya,
+  //              lokasi,
+  //              nama_mesin,
+  //              pegawai_id,
+  //              status_power,
+  //              tegangan,
+  //              total_produksi,
+  //              volume,
+  //              oven_id);    
+  // }
+  fetchData();
 }
