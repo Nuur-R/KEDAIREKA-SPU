@@ -189,17 +189,15 @@ void sendData(float temperatur,
   lastTime = millis();
 }
 
-// fuction for FETCH data from server and PARSE it to JSON
+float suhu_min = 0;
+float suhu_max = 0;
+
 void fetchData(){
   if (WiFi.status() == WL_CONNECTED)
   {
     WiFiClient client;
     HTTPClient http;
     http.begin(client, serverName);
-
-    // json document dengan structure {"jsonrpc": "2.0","method": "call","params": {"service": "object","method": "execute_kw","args": ["new_spu","44","12341234","ir.config_parameter","search_read",[[["key", "like", "kedaireka."]], ["key", "value"]]]},"id": 1}
-
-
     
     doc["jsonrpc"] = "2.0";
     doc["method"] = "call";
@@ -217,7 +215,6 @@ void fetchData(){
     doc["params"]["args"][5][1][1] = "value";
     doc["id"] = 1;
 
-
     String json;
     serializeJson(doc, json);
 
@@ -228,35 +225,31 @@ void fetchData(){
     Serial.println(httpResponseCode);
     String payload = http.getString();
     Serial.println("Response: ");
-    Serial.println(payload);
+    // Serial.println(payload);
+    // {"jsonrpc": "2.0","id": 1,"result": [{"id": 62,"key": "kedaireka.kelas_pln","value": "1"},{"id": 55,"key": "kedaireka.rh_max","value": "80"},{"id": 54,"key": "kedaireka.rh_min","value": "60"},{"id": 59,"key": "kedaireka.rh_ruang_max","value": "80"},{"id": 58,"key": "kedaireka.rh_ruang_min","value": "60"},{"id": 57,"key": "kedaireka.suhu_ruang_max","value": "30"},{"id": 56,"key": "kedaireka.suhu_ruang_min","value": "25.0"},{"id": 63,"key": "kedaireka.tdl","value": "1300.0"},{"id": 53,"key": "kedaireka.temperatur_max","value": "30"},{"id": 52,"key": "kedaireka.temperatur_min","value": "25.0"},{"id": 61,"key": "kedaireka.waktu_oven_max","value": "360"},{"id": 60,"key": "kedaireka.waktu_oven_min","value": "30"}]}
+    // mengambil data dari array json
+    // Stream& input;
 
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.setCursor(0, 0);
-    display.println("Fetch Data");
-    display.display();
-    delay(displayTime);
+    DynamicJsonDocument doc(1536);
 
-    http.end();
+    DeserializationError error = deserializeJson(doc, payload);
 
-    // Parse JSON
-    StaticJsonDocument<200> doc;
-    deserializeJson(doc, payload);
-    JsonObject obj = doc.as<JsonObject>();
-    JsonArray result = obj["result"].as<JsonArray>();
-    JsonObject data = result[0].as<JsonObject>();
-  }
-  else
-  {
-    Serial.println("WiFi Disconnected");
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.setCursor(0, 0);
-    display.println("WiFi Disconnected");
-    display.display();
-    delay(displayTime);
+    if (error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.f_str());
+      return;
+    }
+
+    const char* jsonrpc = doc["jsonrpc"]; // "2.0"
+    int id = doc["id"]; // 1
+
+    for (JsonObject result_item : doc["result"].as<JsonArray>()) {
+      int result_item_id = result_item["id"]; // 62, 55, 54, 59, 58, 57, 56, 63, 53, 52, 61, 60
+      const char* result_item_key = result_item["key"]; // "kedaireka.kelas_pln", "kedaireka.rh_max", ...
+      const char* result_item_value = result_item["value"]; // "1", "80", "60", "80", "60", "30", "25.0", ...
+    }
+    suhu_min = doc["result"][6]["value"];
+    suhu_max = doc["result"][5]["value"];
   }
 }
 
@@ -280,6 +273,7 @@ void setup()
     ESP.reset();
     delay(5000);
   }
+  fetchData();
   Serial.println("connected...yeey :)");
   Serial.println("local ip");
   wifiConnectedDisplay();
@@ -309,8 +303,6 @@ void setup()
 int bahan_id = 1;
 int oven_id = 5;
 
-float suhu_min = 25;
-float suhu_max = 30;
 float temperatur = 0;
 float kelembapan = 0;
 
@@ -328,72 +320,73 @@ float volume = 100;
 
 void loop()
 {
-  // sensors_event_t event;
-  // dht.temperature().getEvent(&event);
-  // if (isnan(event.temperature)) {
-  //   Serial.println(F("Error reading temperature!"));
-  // } else {
-  //   temperatur = event.temperature;
-  // }
-  // dht.humidity().getEvent(&event);
-  // if (isnan(event.relative_humidity)) {
-  //   Serial.println(F("Error reading humidity!"));
-  // } else {
-  //   kelembapan = event.relative_humidity;
-  // }
-
-  // float mA = ACS.mA_AC();
-
-  //   if (bstat == true)
-  //   {
-  //     cycle++;
-  //     delay(500);
-  //     bstat = false;
-  //   }
-
-
-  // // arus mA ke ampare
-  // arus = mA / 1000;
-  // // menghitung daya listrik dari Mili Ampare dan tegangan
-  // daya = arus * tegangan;
-  // // menghitung total produksi dari volume dan cycle
-  // total_produksi = volume * cycle;
-  // // set status_power true jika arus lebih dari 0.23
-  // status_power = arus >= 0.05 ? true : false;
-  
-  // if (temperatur <= suhu_min)
-  //   {
-  //     mainDisplay("Dingin", temperatur, kelembapan, arus, daya, cycle);
-  //     buzz(BUZZPIN, 1000, 3);
-  //   }
-  // else if (temperatur >= suhu_max)
-  //   {
-  //     mainDisplay("Panas", temperatur, kelembapan, arus, daya, cycle);
-  //     buzz(BUZZPIN, 300, 5);
-  //   }
-  // else
-  //   {
-  //     mainDisplay("Normal", temperatur, kelembapan, arus, daya, cycle);
-  //   }
-
-  // if (millis() - lastTime > timerDelay)
-  // {
-  //   lastTime = millis();
-  //   Serial.println("Publishing sensor values...");
-  //   sendData( temperatur,
-  //              kelembapan,
-  //              arus,
-  //              biaya_listrik,
-  //              cycle,
-  //              daya,
-  //              lokasi,
-  //              nama_mesin,
-  //              pegawai_id,
-  //              status_power,
-  //              tegangan,
-  //              total_produksi,
-  //              volume,
-  //              oven_id);    
-  // }
   fetchData();
-}
+  
+  sensors_event_t event;
+  dht.temperature().getEvent(&event);
+  if (isnan(event.temperature)) {
+    Serial.println(F("Error reading temperature!"));
+  } else {
+    temperatur = event.temperature;
+  }
+  dht.humidity().getEvent(&event);
+  if (isnan(event.relative_humidity)) {
+    Serial.println(F("Error reading humidity!"));
+  } else {
+    kelembapan = event.relative_humidity;
+  }
+
+  float mA = ACS.mA_AC();
+
+    if (bstat == true)
+    {
+      cycle++;
+      delay(500);
+      bstat = false;
+    }
+
+
+  // arus mA ke ampare
+  arus = mA / 1000;
+  // menghitung daya listrik dari Mili Ampare dan tegangan
+  daya = arus * tegangan;
+  // menghitung total produksi dari volume dan cycle
+  total_produksi = volume * cycle;
+  // set status_power true jika arus lebih dari 0.23
+  status_power = arus >= 0.05 ? true : false;
+  
+  if (temperatur <= suhu_min)
+    {
+      mainDisplay("Dingin", temperatur, kelembapan, arus, daya, cycle);
+      buzz(BUZZPIN, 1000, 3);
+    }
+  else if (temperatur >= suhu_max)
+    {
+      mainDisplay("Panas", temperatur, kelembapan, arus, daya, cycle);
+      buzz(BUZZPIN, 300, 5);
+    }
+  else
+    {
+      mainDisplay("Normal", temperatur, kelembapan, arus, daya, cycle);
+    }
+
+  if (millis() - lastTime > timerDelay)
+  {
+    lastTime = millis();
+    Serial.println("Publishing sensor values...");
+    sendData( temperatur,
+               kelembapan,
+               arus,
+               biaya_listrik,
+               cycle,
+               daya,
+               lokasi,
+               nama_mesin,
+               pegawai_id,
+               status_power,
+               tegangan,
+               total_produksi,
+               volume,
+               oven_id);    
+  }
+ }
