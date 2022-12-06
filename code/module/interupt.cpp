@@ -22,7 +22,7 @@
 #define cpmPin D7
 
 bool bstat = false;
-void impulseCount(void)
+void ICACHE_RAM_ATTR impulseCount(void)
 {
   bstat = true;
 }
