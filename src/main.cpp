@@ -297,7 +297,7 @@ void setup()
 
   // set LIMIT_SWITCH as input
   pinMode(cpmPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(cpmPin), impulseCount, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(cpmPin), impulseCount, HIGH);
 }
 
 int bahan_id = 1;
@@ -320,8 +320,8 @@ float volume = 100;
 
 void loop()
 {
+  digitalWrite(cpmPin, HIGH);
   fetchData();
-  
   sensors_event_t event;
   dht.temperature().getEvent(&event);
   if (isnan(event.temperature)) {
@@ -341,7 +341,7 @@ void loop()
     if (bstat == true)
     {
       cycle++;
-      delay(500);
+      delay(300);
       bstat = false;
     }
 
