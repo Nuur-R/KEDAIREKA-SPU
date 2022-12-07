@@ -297,7 +297,7 @@ void setup()
 
   // set LIMIT_SWITCH as input
   pinMode(cpmPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(cpmPin), impulseCount, HIGH);
+  attachInterrupt(digitalPinToInterrupt(cpmPin), impulseCount, CHANGE);
 }
 
 int bahan_id = 1;
