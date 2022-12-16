@@ -1,6 +1,3 @@
-// Node01
-// Gudang
-
 #include <Arduino.h>
 
 #include <SPI.h>
@@ -21,7 +18,6 @@
 
 const char *serverName = "http://103.172.204.18:8069/jsonrpc";
 
-
 unsigned long lastTime = 0;
 unsigned long timerDelay = 10005;
 unsigned long displayTime = 2000;
@@ -29,6 +25,10 @@ unsigned long displayTime = 2000;
 #define BUZZPIN D8
 #define DHTPIN D4
 #define DHTTYPE DHT11
+
+#define cpmPin D7
+volatile bool bstat = false;
+
 DHT_Unified dht(DHTPIN, DHTTYPE);
 uint32_t delayMS;
 
@@ -50,11 +50,16 @@ void sendData(float temperatur,
               bool status_power,
               float tegangan,
               float total_produksi,
-              float volume);
+              float volume,
+              int oven_id);
 void startDisplay();
 void wifiConnectedDisplay();
-void dhtDisplay(String status, float temperatur, float kelembapan);
-void powerDisplay(float arus, float daya);
+void mainDisplay(String status, float temperatur, float kelembapan, float arus, float daya, int cycle);
+
+void ICACHE_RAM_ATTR impulseCount(void)
+{
+  bstat = true;
+}
 
 String lokasi = "Gudang";
 String node = "Node03";
@@ -75,20 +80,21 @@ float daya = arus * tegangan;
 float biaya_listrik = 0;
 bool status_power = true;
 
-
 int cycle = 1;
-int pegawai_id = 1;
+int pegawai_id = 7;
+int oven_id = 5;
 
 float total_produksi = 1230;
 float volume = 100;
 
 DynamicJsonDocument doc(1024);
-ACS712  ACS(A0, 5.0, 1023, 100);
+ACS712 ACS(A0, 5.0, 1023, 100);
 
 void setup()
 {
   Serial.begin(115200);
-  while (!Serial);
+  while (!Serial)
+    ;
   WiFiManager wifiManager;
   wifiManager.setBreakAfterConfig(true);
 
@@ -114,7 +120,7 @@ void setup()
   sensor_t sensor;
   dht.temperature().getSensor(&sensor);
   dht.humidity().getSensor(&sensor);
-  
+
   Serial.println(__FILE__);
   Serial.print("ACS712_LIB_VERSION: ");
   Serial.println(ACS712_LIB_VERSION);
@@ -125,6 +131,10 @@ void setup()
   Serial.print(". Noise mV: ");
   Serial.println(ACS.getNoisemV());
   delayMS = sensor.min_delay / 1000;
+
+  // set LIMIT_SWITCH as input
+  pinMode(cpmPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(cpmPin), impulseCount, CHANGE);
 }
 
 void loop()
@@ -132,20 +142,32 @@ void loop()
   delay(delayMS);
   sensors_event_t event;
   dht.temperature().getEvent(&event);
-  if (isnan(event.temperature)) {
+  if (isnan(event.temperature))
+  {
     Serial.println(F("Error reading temperature!"));
-  } else {
+  }
+  else
+  {
     temperatur = event.temperature;
   }
   dht.humidity().getEvent(&event);
-  if (isnan(event.relative_humidity)) {
+  if (isnan(event.relative_humidity))
+  {
     Serial.println(F("Error reading humidity!"));
-  } else {
+  }
+  else
+  {
     kelembapan = event.relative_humidity;
   }
 
   float mA = ACS.mA_AC();
   Serial.println(mA);
+  if (bstat == true)
+  {
+    cycle++;
+    delay(300);
+    bstat = false;
+  }
 
   // arus mA ke ampare
   arus = mA / 1000;
@@ -160,42 +182,37 @@ void loop()
 
   if (temperatur <= suhu_min)
   {
+    mainDisplay("Dingin", temperatur, kelembapan, arus, daya, cycle);
     buzz(BUZZPIN, 1000, 3);
-    dhtDisplay("Dingin...", temperatur, kelembapan);
-    delay(displayTime);
   }
   else if (temperatur >= suhu_max)
   {
+    mainDisplay("Panas", temperatur, kelembapan, arus, daya, cycle);
     buzz(BUZZPIN, 300, 5);
-    dhtDisplay("Paanas...", temperatur, kelembapan);
-    delay(displayTime);
   }
   else
   {
-    dhtDisplay("Normal", temperatur, kelembapan);
-    delay(2000);
-    powerDisplay(arus, daya);
-    delay(2000);
+    mainDisplay("Normal", temperatur, kelembapan, arus, daya, cycle);
   }
 
   if (millis() - lastTime > timerDelay)
   {
     lastTime = millis();
     Serial.println("Publishing sensor values...");
-    sendData( temperatur,
-               kelembapan,
-               arus,
-               biaya_listrik,
-               cycle,
-               daya,
-               lokasi,
-               nama_mesin,
-               pegawai_id,
-               status_power,
-               tegangan,
-               total_produksi,
-               volume);
-             
+    sendData(temperatur,
+             kelembapan,
+             arus,
+             biaya_listrik,
+             cycle,
+             daya,
+             lokasi,
+             nama_mesin,
+             pegawai_id,
+             status_power,
+             tegangan,
+             total_produksi,
+             volume,
+             oven_id);
   }
 }
 
@@ -211,7 +228,8 @@ void buzz(int pin, int delayTime, int repeat)
 }
 
 // Display
-void startDisplay(){
+void startDisplay()
+{
   display.clearDisplay();
   display.setTextSize(2);
   display.setTextColor(WHITE);
@@ -226,7 +244,8 @@ void startDisplay(){
   buzz(BUZZPIN, 1500, 1);
   delay(500);
 }
-void wifiConnectedDisplay(){
+void wifiConnectedDisplay()
+{
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -236,7 +255,8 @@ void wifiConnectedDisplay(){
   display.println(WiFi.localIP());
   display.display();
 }
-void dhtDisplay(String status, float temperature, float humidity){
+void mainDisplay(String status, float temperatur, float kelembapan, float arus, float daya, int cycle)
+{
   display.clearDisplay();
   display.setTextSize(2);
   display.setTextColor(WHITE);
@@ -244,30 +264,11 @@ void dhtDisplay(String status, float temperature, float humidity){
   display.println(status);
   display.setTextSize(1);
   display.setCursor(0, 20);
-  display.println("Temperature : ");
-  display.setCursor(0, 30);
-  display.println(temperature);
-  display.setCursor(0, 40);
-  display.println("Humidity : ");
-  display.setCursor(0, 50);
-  display.println(humidity);
-  display.display();
-}
-void powerDisplay(float arus, float daya){
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println("Power");
-  display.setTextSize(1);
-  display.setCursor(0, 20);
-  display.println("Arus : ");
-  display.setCursor(0, 30);
-  display.println(arus);
-  display.setCursor(0, 40);
-  display.println("Daya : ");
-  display.setCursor(0, 50);
-  display.println(daya);
+  display.println("Suhu       : " + String(temperatur) + " C");
+  display.println("Kelembapan : " + String(kelembapan) + " %");
+  display.println("Arus       : " + String(arus) + " A");
+  display.println("Daya       : " + String(daya) + " W");
+  display.println("Cycle      : " + String(cycle));
   display.display();
 }
 
@@ -283,7 +284,8 @@ void sendData(float temperatur,
               bool status_power,
               float tegangan,
               float total_produksi,
-              float volume)
+              float volume,
+              int oven_id)
 {
   if (WiFi.status() == WL_CONNECTED)
   {
@@ -308,8 +310,8 @@ void sendData(float temperatur,
     doc["params"]["args"][5][0]["cycle"] = cycle;
     doc["params"]["args"][5][0]["daya"] = daya;
     doc["params"]["args"][5][0]["lokasi"] = lokasi;
-    doc["params"]["args"][5][0]["oven_id"] = 6;
-    doc["params"]["args"][5][0]["pegawai_id"] = 7;
+    doc["params"]["args"][5][0]["oven_id"] = oven_id;
+    doc["params"]["args"][5][0]["pegawai_id"] = pegawai_id;
     doc["params"]["args"][5][0]["status_power"] = status_power;
     doc["params"]["args"][5][0]["t_off"] = "2022-11-25 11:17:39";
     doc["params"]["args"][5][0]["t_on"] = "2022-11-25 10:35:39";
