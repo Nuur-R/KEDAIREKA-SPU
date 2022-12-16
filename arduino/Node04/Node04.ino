@@ -27,7 +27,7 @@ unsigned long displayTime = 2000;
 
 #define BUZZPIN D8
 #define DHTPIN D4
-#define DHTTYPE DHT11
+#define DHTTYPE DHT22
 
 #define cpmPin D7
 volatile bool bstat = false;

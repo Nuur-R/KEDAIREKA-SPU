@@ -1,5 +1,5 @@
-// Node02
-// Oven
+// Node06
+// Oven1
 
 #include <Arduino.h>
 
@@ -20,11 +20,10 @@
 #include <ACS712.h>
 #include <max6675.h>
 
-
-const char *serverName = "http://18.217.56.118:8069/jsonrpc";
+const char *serverName = "http://103.172.204.18:8069/jsonrpc";
 
 unsigned long lastTime = 0;
-unsigned long timerDelay = 60000*15;
+unsigned long timerDelay = 60000*30;
 unsigned long displayTime = 2000;
 
 #define BUZZPIN D0
@@ -32,149 +31,38 @@ int thermoSO = D6;
 int thermoCS = D7;
 int thermoCSK  = D8;
 
-
 MAX6675 thermocouple(thermoCSK, thermoCS, thermoSO);
+
+volatile bool bstat = false;
+
+uint32_t delayMS;
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define OLED_RESET -1    // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-void buzz(int pin, int delayTime, int repeat);
-void sendData(float temperatur,
-              float kelembapan,
-              float arus,
-              float biaya_listrik,
-              int cycle,
-              float daya,
-              String lokasi,
-              String nama_mesin,
-              int pegawai_id,
-              bool status_power,
-              float tegangan,
-              float total_produksi,
-              float volume);
-void startDisplay();
-void wifiConnectedDisplay();
-void ovenDisplay(String status, float temperature);
-void powerDisplay(float arus, float daya);
-
-String lokasi = "Gudang";
+String lokasi = "Ruang Pengadukan";
 String node = "Node06";
 String nama_mesin = "Mesin Mixing";
 String nodeName = node + "-" + nama_mesin;
 String accessPointIP = "192.168.4.1";
 
-int bahan_id = 1;
-
-float suhu_min = 24;
-float suhu_max = 37;
-float temperatur_oven = 0;
-float kelembapan = 0;
-
-float tegangan = 220;
-float arus = 0;
-float daya = arus * tegangan;
-float biaya_listrik = 0;
-bool status_power = true;
-
-
-int cycle = 1;
-int pegawai_id = 1;
-
-float total_produksi = 1230;
-float volume = 100;
-
-
 DynamicJsonDocument doc(1024);
 ACS712  ACS(A0, 5.0, 1023, 100);
 
-void setup()
-{
-    Serial.begin(115200);
-    WiFiManager wifiManager;
-    wifiManager.setBreakAfterConfig(true);
 
-    pinMode(BUZZPIN, OUTPUT);
-    digitalWrite(BUZZPIN, LOW);
-
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-    
-    startDisplay();
-
-    buzz(BUZZPIN, 1500, 1);
-    delay(500);
-    
-
-    if (!wifiManager.autoConnect(nodeName.c_str())) {
-        Serial.println("failed to connect, we should reset as see if it connects");
-        delay(3000);
-        ESP.reset();
-        delay(5000);
-    }
-
-    Serial.println("connected...yeey :)");
-    Serial.println("local ip");
-    wifiConnectedDisplay();
-    buzz(BUZZPIN, 700, 3);
-    Serial.println(WiFi.localIP());
-    Serial.println("Timer set to 20 seconds (timerDelay variable), it will take 20 seconds before publishing the first reading.");
-
-}
-
-void loop()
-{
-  delay(100);
-  float mA = ACS.mA_AC();
-  Serial.println(mA);
-  // arus mA ke ampare
-  arus = mA / 1000;
-  // menghitung daya listrik dari Mili Ampare dan tegangan
-  daya = arus * tegangan;
-  // menghitung biaya listrik dari daya listrik dan waktu
-  biaya_listrik = daya * 0.000001 * 15;
-  // menghitung total produksi dari volume dan cycle
-  total_produksi = volume * cycle;
-  // set status_power true jika arus lebih dari 0.23
-  status_power = arus >= 0.05 ? true : false;
-  
-  temperatur_oven = thermocouple.readCelsius();
-    ovenDisplay("Oven",temperatur_oven);
-    delay(displayTime);
-    powerDisplay(arus, daya);
-    delay(displayTime);
-
-    if (millis() - lastTime > timerDelay)
-    {
-        lastTime = millis();
-        // sendData(1, temperatur_oven, 1);
-        sendData(temperatur_oven,
-                 kelembapan,
-                 arus,
-                 biaya_listrik,
-                 cycle,
-                 daya,
-                 lokasi,
-                 nama_mesin,
-                 pegawai_id,
-                 status_power,
-                 tegangan,
-                 total_produksi,
-                 volume);
-    }
-}
 
 void buzz(int pin, int delayTime, int repeat)
 {
-    for (int i = 0; i < repeat; i++)
-    {
-        digitalWrite(pin, HIGH);
-        delay(delayTime);
-        digitalWrite(pin, LOW);
-        delay(delayTime);
-    }
+  for (int i = 0; i < repeat; i++)
+  {
+    digitalWrite(pin, HIGH);
+    delay(delayTime);
+    digitalWrite(pin, LOW);
+    delay(delayTime);
+  }
 }
-
 // Display
 void startDisplay(){
   display.clearDisplay();
@@ -201,35 +89,22 @@ void wifiConnectedDisplay(){
   display.println(WiFi.localIP());
   display.display();
 }
-void ovenDisplay(String status, float temperature){
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  display.println(status);
-  display.setTextSize(1);
-  display.setCursor(0,25);
-  display.println("Suhu Oven : ");
-  display.setCursor(0,35);
-  display.println(temperature);
-  display.display();
-}
-void powerDisplay(float arus, float daya){
+void mainDisplay(String status, float temperatur, float kelembapan, float arus, float daya, int cycle){
   display.clearDisplay();
   display.setTextSize(2);
   display.setTextColor(WHITE);
   display.setCursor(0, 0);
-  display.println("Power");
+  display.println(status);
   display.setTextSize(1);
   display.setCursor(0, 20);
-  display.println("Arus : ");
-  display.setCursor(0, 30);
-  display.println(arus);
-  display.setCursor(0, 40);
-  display.println("Daya : ");
-  display.setCursor(0, 50);
-  display.println(daya);
+  display.println("Suhu       : " + String(temperatur) + " C");
+  display.println("Arus       : " + String(arus) + " A");
+  display.println("Daya       : " + String(daya) + " W");
   display.display();
+}
+
+void ICACHE_RAM_ATTR impulseCount(void){
+  bstat = true;
 }
 
 void sendData(float temperatur,
@@ -244,8 +119,8 @@ void sendData(float temperatur,
               bool status_power,
               float tegangan,
               float total_produksi,
-              float volume)
-{
+              float volume,
+              int oven_id){
   if (WiFi.status() == WL_CONNECTED)
   {
     WiFiClient client;
@@ -257,9 +132,9 @@ void sendData(float temperatur,
     doc["method"] = "call";
     doc["params"]["service"] = "object";
     doc["params"]["method"] = "execute_kw";
-    doc["params"]["args"][0] = "odoo_14_0";
-    doc["params"]["args"][1] = 2;
-    doc["params"]["args"][2] = "nimda0";
+    doc["params"]["args"][0] = "new_spu";
+    doc["params"]["args"][1] = 44;
+    doc["params"]["args"][2] = "12341234";
     doc["params"]["args"][3] = "kedaireka.mesin.monitoring";
     doc["params"]["args"][4] = "create";
     doc["params"]["args"][5][0]["temperatur"] = temperatur;
@@ -269,7 +144,7 @@ void sendData(float temperatur,
     doc["params"]["args"][5][0]["cycle"] = cycle;
     doc["params"]["args"][5][0]["daya"] = daya;
     doc["params"]["args"][5][0]["lokasi"] = lokasi;
-    doc["params"]["args"][5][0]["name"] = nama_mesin;
+    doc["params"]["args"][5][0]["oven_id"] = oven_id;
     doc["params"]["args"][5][0]["pegawai_id"] = pegawai_id;
     doc["params"]["args"][5][0]["status_power"] = status_power;
     doc["params"]["args"][5][0]["t_off"] = "2022-11-25 11:17:39";
@@ -287,6 +162,10 @@ void sendData(float temperatur,
 
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
+    String payload = http.getString();
+    Serial.println("Response: ");
+    Serial.println(payload);
+
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(WHITE);
@@ -309,3 +188,193 @@ void sendData(float temperatur,
   }
   lastTime = millis();
 }
+
+float suhu_min = 0;
+float suhu_max = 0;
+
+void fetchData(){
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, serverName);
+    
+    doc["jsonrpc"] = "2.0";
+    doc["method"] = "call";
+    doc["params"]["service"] = "object";
+    doc["params"]["method"] = "execute_kw";
+    doc["params"]["args"][0] = "new_spu";
+    doc["params"]["args"][1] = 44;
+    doc["params"]["args"][2] = "12341234";
+    doc["params"]["args"][3] = "ir.config_parameter";
+    doc["params"]["args"][4] = "search_read";
+    doc["params"]["args"][5][0][0][0] = "key";
+    doc["params"]["args"][5][0][0][1] = "like";
+    doc["params"]["args"][5][0][0][2] = "kedaireka";
+    doc["params"]["args"][5][1][0] = "key";
+    doc["params"]["args"][5][1][1] = "value";
+    doc["id"] = 1;
+
+    String json;
+    serializeJson(doc, json);
+
+    http.addHeader("Content-Type", "application/json");
+    int httpResponseCode = http.POST(doc.as<String>());
+
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    String payload = http.getString();
+    Serial.println("Response: ");
+    // Serial.println(payload);
+    // {"jsonrpc": "2.0","id": 1,"result": [{"id": 62,"key": "kedaireka.kelas_pln","value": "1"},{"id": 55,"key": "kedaireka.rh_max","value": "80"},{"id": 54,"key": "kedaireka.rh_min","value": "60"},{"id": 59,"key": "kedaireka.rh_ruang_max","value": "80"},{"id": 58,"key": "kedaireka.rh_ruang_min","value": "60"},{"id": 57,"key": "kedaireka.suhu_ruang_max","value": "30"},{"id": 56,"key": "kedaireka.suhu_ruang_min","value": "25.0"},{"id": 63,"key": "kedaireka.tdl","value": "1300.0"},{"id": 53,"key": "kedaireka.temperatur_max","value": "30"},{"id": 52,"key": "kedaireka.temperatur_min","value": "25.0"},{"id": 61,"key": "kedaireka.waktu_oven_max","value": "360"},{"id": 60,"key": "kedaireka.waktu_oven_min","value": "30"}]}
+    // mengambil data dari array json
+    // Stream& input;
+
+    DynamicJsonDocument doc(1536);
+
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if (error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.f_str());
+      return;
+    }
+
+    const char* jsonrpc = doc["jsonrpc"]; // "2.0"
+    int id = doc["id"]; // 1
+
+    for (JsonObject result_item : doc["result"].as<JsonArray>()) {
+      int result_item_id = result_item["id"]; // 62, 55, 54, 59, 58, 57, 56, 63, 53, 52, 61, 60
+      const char* result_item_key = result_item["key"]; // "kedaireka.kelas_pln", "kedaireka.rh_max", ...
+      const char* result_item_value = result_item["value"]; // "1", "80", "60", "80", "60", "30", "25.0", ...
+    }
+    suhu_min = doc["result"][9]["value"];
+    suhu_max = doc["result"][8]["value"];
+  }
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  while (!Serial);
+  WiFiManager wifiManager;
+  wifiManager.setBreakAfterConfig(true);
+
+  pinMode(BUZZPIN, OUTPUT);
+  digitalWrite(BUZZPIN, LOW);
+
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  startDisplay();
+
+  if (!wifiManager.autoConnect(nodeName.c_str()))
+  {
+    Serial.println("failed to connect, we should reset as see if it connects");
+    delay(3000);
+    ESP.reset();
+    delay(5000);
+  }
+  fetchData();
+  Serial.println("connected...yeey :)");
+  Serial.println("local ip");
+  wifiConnectedDisplay();
+  buzz(BUZZPIN, 700, 3);
+
+  sensor_t sensor;
+  
+  Serial.println(__FILE__);
+  Serial.print("ACS712_LIB_VERSION: ");
+  Serial.println(ACS712_LIB_VERSION);
+
+  ACS.autoMidPoint();
+  Serial.print("MidPoint: ");
+  Serial.print(ACS.getMidPoint());
+  Serial.print(". Noise mV: ");
+  Serial.println(ACS.getNoisemV());
+  delayMS = sensor.min_delay / 1000;
+
+  // set LIMIT_SWITCH as input
+}
+
+int bahan_id = 1;
+int oven_id = 5;
+
+float temperatur = 0;
+float kelembapan = 0;
+
+float tegangan = 220;
+float arus = 0;
+float daya = arus * tegangan;
+float biaya_listrik = 0;
+bool status_power = true;
+
+int cycle = 0;
+int pegawai_id = 1;
+
+float total_produksi = 1230;
+float volume = 100;
+
+void loop()
+{
+  fetchData();
+  sensors_event_t event;
+  
+  temperatur = thermocouple.readCelsius();
+  float mA = ACS.mA_AC();
+
+    if (bstat == true)
+    {
+      cycle++;
+      delay(300);
+      bstat = false;
+    }
+
+  Serial.println("= = = = = = = = = = = = = = = = =");
+  Serial.println("Min : "+String(suhu_min));
+  Serial.println("Max : "+String(suhu_max));
+  Serial.println("= = = = = = = = = = = = = = = = =");
+  Serial.println();
+
+  // arus mA ke ampare
+  arus = mA / 1000;
+  // menghitung daya listrik dari Mili Ampare dan tegangan
+  daya = arus * tegangan;
+  // menghitung total produksi dari volume dan cycle
+  total_produksi = volume * cycle;
+  // set status_power true jika arus lebih dari 0.23
+  status_power = arus >= 0.05 ? true : false;
+  
+  if (temperatur <= suhu_min)
+    {
+      mainDisplay("Dingin", temperatur, kelembapan, arus, daya, cycle);
+      buzz(BUZZPIN, 1000, 3);
+    }
+  else if (temperatur >= suhu_max)
+    {
+      mainDisplay("Panas", temperatur, kelembapan, arus, daya, cycle);
+      buzz(BUZZPIN, 300, 5);
+    }
+  else
+    {
+      mainDisplay("Normal", temperatur, kelembapan, arus, daya, cycle);
+    }
+
+  if (millis() - lastTime > timerDelay)
+  {
+    lastTime = millis();
+    Serial.println("Publishing sensor values...");
+    sendData( temperatur,
+               kelembapan,
+               arus,
+               biaya_listrik,
+               cycle,
+               daya,
+               lokasi,
+               nama_mesin,
+               pegawai_id,
+               status_power,
+               tegangan,
+               total_produksi,
+               volume,
+               oven_id);    
+  }
+ }

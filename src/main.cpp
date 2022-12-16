@@ -19,12 +19,12 @@
 const char *serverName = "http://103.172.204.18:8069/jsonrpc";
 
 unsigned long lastTime = 0;
-unsigned long timerDelay = 10005;
+unsigned long timerDelay = 60000 * 30;
 unsigned long displayTime = 2000;
 
 #define BUZZPIN D8
 #define DHTPIN D4
-#define DHTTYPE DHT11
+#define DHTTYPE DHT22
 
 #define cpmPin D7
 volatile bool bstat = false;
@@ -61,9 +61,9 @@ void ICACHE_RAM_ATTR impulseCount(void)
   bstat = true;
 }
 
-String lokasi = "Gudang";
-String node = "Node03";
-String nama_mesin = "Shrink";
+String lokasi = "Ruang Gudang";
+String node = "Node01";
+String nama_mesin = "Gudang";
 String nodeName = node + "-" + nama_mesin;
 String accessPointIP = "192.168.4.1";
 
@@ -82,7 +82,7 @@ bool status_power = true;
 
 int cycle = 1;
 int pegawai_id = 7;
-int oven_id = 5;
+int oven_id = 1;
 
 float total_produksi = 1230;
 float volume = 100;
@@ -266,9 +266,6 @@ void mainDisplay(String status, float temperatur, float kelembapan, float arus, 
   display.setCursor(0, 20);
   display.println("Suhu       : " + String(temperatur) + " C");
   display.println("Kelembapan : " + String(kelembapan) + " %");
-  display.println("Arus       : " + String(arus) + " A");
-  display.println("Daya       : " + String(daya) + " W");
-  display.println("Cycle      : " + String(cycle));
   display.display();
 }
 
@@ -301,25 +298,12 @@ void sendData(float temperatur,
     doc["params"]["args"][0] = "new_spu";
     doc["params"]["args"][1] = 44;
     doc["params"]["args"][2] = "12341234";
-    doc["params"]["args"][3] = "kedaireka.mesin.monitoring";
+    doc["params"]["args"][3] = "kedaireka.iot";
     doc["params"]["args"][4] = "create";
     doc["params"]["args"][5][0]["temperatur"] = temperatur;
     doc["params"]["args"][5][0]["kelembapan"] = kelembapan;
-    doc["params"]["args"][5][0]["arus"] = arus;
-    doc["params"]["args"][5][0]["biaya_listrik"] = biaya_listrik;
-    doc["params"]["args"][5][0]["cycle"] = cycle;
-    doc["params"]["args"][5][0]["daya"] = daya;
-    doc["params"]["args"][5][0]["lokasi"] = lokasi;
-    doc["params"]["args"][5][0]["oven_id"] = oven_id;
-    doc["params"]["args"][5][0]["pegawai_id"] = pegawai_id;
-    doc["params"]["args"][5][0]["status_power"] = status_power;
-    doc["params"]["args"][5][0]["t_off"] = "2022-11-25 11:17:39";
-    doc["params"]["args"][5][0]["t_on"] = "2022-11-25 10:35:39";
-    doc["params"]["args"][5][0]["tegangan"] = tegangan;
-    doc["params"]["args"][5][0]["total_produksi"] = total_produksi;
-    doc["params"]["args"][5][0]["volume"] = volume;
-    doc["id"] = 1;
 
+    doc["id"] = 1;
     String json;
     serializeJson(doc, json);
 
