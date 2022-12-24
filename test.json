@@ -4,62 +4,62 @@
     "result": [
         {
             "id": 62,
-            "key": "kedaireka.kelas_pln",
+            "key": "kedaireka.kelas_pln", //1
             "value": "1"
         },
         {
             "id": 55,
-            "key": "kedaireka.rh_max",
+            "key": "kedaireka.rh_max", //2
             "value": "80"
         },
         {
             "id": 54,
-            "key": "kedaireka.rh_min",
+            "key": "kedaireka.rh_min", //3
             "value": "60"
         },
         {
             "id": 59,
-            "key": "kedaireka.rh_ruang_max",
+            "key": "kedaireka.rh_ruang_max", //4
             "value": "80"
         },
         {
             "id": 58,
-            "key": "kedaireka.rh_ruang_min",
+            "key": "kedaireka.rh_ruang_min", //5
             "value": "60"
         },
         {
             "id": 57,
-            "key": "kedaireka.suhu_ruang_max",
+            "key": "kedaireka.suhu_ruang_max", //6
             "value": "30"
         },
         {
             "id": 56,
-            "key": "kedaireka.suhu_ruang_min",
+            "key": "kedaireka.suhu_ruang_min", //7
             "value": "25.0"
         },
         {
             "id": 63,
-            "key": "kedaireka.tdl",
+            "key": "kedaireka.tdl", //8
             "value": "1300.0"
         },
         {
             "id": 53,
-            "key": "kedaireka.temperatur_max",
+            "key": "kedaireka.temperatur_max", //9
             "value": "30"
         },
         {
             "id": 52,
-            "key": "kedaireka.temperatur_min",
+            "key": "kedaireka.temperatur_min", //10
             "value": "25.0"
         },
         {
             "id": 61,
-            "key": "kedaireka.waktu_oven_max",
+            "key": "kedaireka.waktu_oven_max", //11
             "value": "360"
         },
         {
             "id": 60,
-            "key": "kedaireka.waktu_oven_min",
+            "key": "kedaireka.waktu_oven_min", //12
             "value": "30"
         }
     ]

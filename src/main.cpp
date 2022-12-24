@@ -1,5 +1,6 @@
-// Node02
-// Oven
+// author: @nuur_r
+// version: 2.0.0
+// changelog: update sensor arus dan tegangan  PZEM004T
 
 #include <Arduino.h>
 
@@ -23,62 +24,65 @@
 #include <SoftwareSerial.h>
 
 const char *serverName = "http://103.172.204.18:8069/jsonrpc";
-
-unsigned long lastTime = 0;
-unsigned long timerDelay = 10000;
-unsigned long displayTime = 2000;
-
-#define BUZZPIN D4
-int thermoSO = D6;
-int thermoCS = D5;
-int thermoCSK = D0;
-
-MAX6675 thermocouple(thermoCSK, thermoCS, thermoSO);
-
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define OLED_RESET -1    // Reset pin # (or -1 if sharing Arduino reset pin)
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-
-String lokasi = "Ruang Tester";
-String node = "NodeXX";
-String nama_mesin = "Mesin Test";
-String nodeName = node + "-" + nama_mesin;
-String accessPointIP = "192.168.4.1";
-
-int bahan_id = 1;
-int oven_id = 4;
-
-float suhu_min = 24;
-float suhu_max = 37;
-float temperatur_oven = 0;
-float kelembapan = 0;
-
-float tegangan = 0;
-float arus = 0;
-float daya = arus * tegangan;
-float biaya_listrik = 0;
-bool status_power = true;
-
-String t_on = "2020-01-01 00:00:00";
-String t_off = "2020-01-01 00:00:00";
-
-int cycle = 1;
-int pegawai_id = 7;
-
-float total_produksi = 1230;
-float volume = 100;
-
 DynamicJsonDocument doc(1024);
 
+// Time Setting
+unsigned long lastTime    = 0;
+unsigned long timerDelay  = 10000;  // delay waktu pengiriman data
+unsigned long displayTime = 2000;
+
+// PIN Declaration
+#define BUZZPIN D4
+int thermoSO  = D6;
+int thermoCS  = D5;
+int thermoCSK = D0;
 #if !defined(PZEM_RX_PIN) && !defined(PZEM_TX_PIN)
 #define PZEM_RX_PIN D8
 #define PZEM_TX_PIN D7
 #endif
 
+// MAX6675 Declaration
+MAX6675 thermocouple(thermoCSK, thermoCS, thermoSO);
+// PZEM Declaration
 SoftwareSerial pzemSWSerial(PZEM_RX_PIN, PZEM_TX_PIN);
 PZEM004Tv30 pzem(pzemSWSerial);
+// OLED Declaration
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET -1    // Reset pin # (or -1 if sharing Arduino reset pin)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// Node Name
+String lokasi         = "Ruang Oven";
+String node           = "Node06";
+String nama_mesin     = "Mesin Oven";
+String nodeName       = node + "-" + nama_mesin;
+String accessPointIP  = "192.168.4.1";
+
+// get data
+float suhu_min  = 25;
+float suhu_max  = 300;
+
+int bahan_id    = 1;
+int oven_id     = 2;
+int pegawai_id  = 7;
+
+// Post Data
+float temperatur = 0;
+float kelembapan      = 0;
+float arus            = 0;
+float tegangan        = 0;
+float biaya_listrik   = 0;
+float daya            = arus * tegangan;
+int cycle             = 0;
+float total_produksi  = 0;
+float volume          = 0;
+bool status_power     = true;
+String t_on           = "2020-01-01 00:00:00";
+String t_off          = "2020-01-01 00:00:00";
+
+
+
 
 
 void buzz(int pin, int delayTime, int repeat)
@@ -92,7 +96,11 @@ void buzz(int pin, int delayTime, int repeat)
   }
 }
 
-// Display
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+//  = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
+// Display Function
 void startDisplay()
 {
   display.clearDisplay();
@@ -138,7 +146,19 @@ void mainDisplay(String status, float temperatur, float tegangan, float arus, fl
   display.println("Daya     : " + String(daya) + " W");
   display.display();
 }
+void alertDisplay()
+{
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println("Alert!!!");
+  display.setCursor(0, 10);
+  display.println(WiFi.localIP());
+  display.display();
+}
 
+// Send Data Function
 void sendData(float temperatur,
               float kelembapan,
               float arus,
@@ -162,7 +182,7 @@ void sendData(float temperatur,
 
     http.begin(client, serverName);
     http.addHeader("Content-Type", "application/json");
-    int httpCode = http.POST("{\"jsonrpc\": \"2.0\",\"method\": \"call\",\"params\": {\"service\": \"object\",\"method\": \"execute_kw\",\"args\": [\"new_spu\",44,\"12341234\",\"kedaireka.mesin.monitoring\",\"create\",[{\"temperatur\": " + String(temperatur_oven) + ",\"kelembapan\": " + String(kelembapan) + ",\"arus\": " + String(arus) + ",\"biaya_listrik\": " + String(biaya_listrik) + ",\"cycle\": " + String(cycle) + ",\"daya\": " + String(daya) + ",\"lokasi\": \"kedai reka\",\"oven_id\": " + String(oven_id) + ",\"pegawai_id\": " + String(pegawai_id) + ",\"status_power\": " + String(status_power) + ",\"t_off\": \"2022-11-25 11:17:39\",\"t_on\": \"2022-11-25 10:35:39\",\"tegangan\": " + String(tegangan) + ",\"total_produksi\": " + String(total_produksi) + ",\"volume\": " + String(volume) + "}]]},\"id\": 1}");
+    int httpCode = http.POST("{\"jsonrpc\": \"2.0\",\"method\": \"call\",\"params\": {\"service\": \"object\",\"method\": \"execute_kw\",\"args\": [\"new_spu\",44,\"12341234\",\"kedaireka.mesin.monitoring\",\"create\",[{\"temperatur\": " + String(temperatur) + ",\"kelembapan\": " + String(kelembapan) + ",\"arus\": " + String(arus) + ",\"biaya_listrik\": " + String(biaya_listrik) + ",\"cycle\": " + String(cycle) + ",\"daya\": " + String(daya) + ",\"lokasi\": " + String(lokasi) + ",\"oven_id\": " + String(oven_id) + ",\"pegawai_id\": " + String(pegawai_id) + ",\"status_power\": " + String(status_power) + ",\"t_off\": " + String(t_off) + ",\"t_on\": " + String(t_on) + ",\"tegangan\": " + String(tegangan) + ",\"total_produksi\": " + String(total_produksi) + ",\"volume\": " + String(volume) + "}]]},\"id\": 1}");
     Serial.println(httpCode);
     String payload = http.getString();
     Serial.println(payload);
@@ -189,10 +209,70 @@ void sendData(float temperatur,
     delay(displayTime);
   }
 }
+// Fetch Data Function
+void fetchData(){
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, serverName);
+    
+    doc["jsonrpc"] = "2.0";
+    doc["method"] = "call";
+    doc["params"]["service"] = "object";
+    doc["params"]["method"] = "execute_kw";
+    doc["params"]["args"][0] = "new_spu";
+    doc["params"]["args"][1] = 44;
+    doc["params"]["args"][2] = "12341234";
+    doc["params"]["args"][3] = "ir.config_parameter";
+    doc["params"]["args"][4] = "search_read";
+    doc["params"]["args"][5][0][0][0] = "key";
+    doc["params"]["args"][5][0][0][1] = "like";
+    doc["params"]["args"][5][0][0][2] = "kedaireka";
+    doc["params"]["args"][5][1][0] = "key";
+    doc["params"]["args"][5][1][1] = "value";
+    doc["id"] = 1;
 
-// =    =    =   =  =  =
-// = = ==   ===  =  == =
-// =  = =  =  =  =  = ==
+    String json;
+    serializeJson(doc, json);
+
+    http.addHeader("Content-Type", "application/json");
+    int httpResponseCode = http.POST(doc.as<String>());
+
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    String payload = http.getString();
+    Serial.println("Response: ");
+    // Serial.println(payload);
+    // {"jsonrpc": "2.0","id": 1,"result": [{"id": 62,"key": "kedaireka.kelas_pln","value": "1"},{"id": 55,"key": "kedaireka.rh_max","value": "80"},{"id": 54,"key": "kedaireka.rh_min","value": "60"},{"id": 59,"key": "kedaireka.rh_ruang_max","value": "80"},{"id": 58,"key": "kedaireka.rh_ruang_min","value": "60"},{"id": 57,"key": "kedaireka.suhu_ruang_max","value": "30"},{"id": 56,"key": "kedaireka.suhu_ruang_min","value": "25.0"},{"id": 63,"key": "kedaireka.tdl","value": "1300.0"},{"id": 53,"key": "kedaireka.temperatur_max","value": "30"},{"id": 52,"key": "kedaireka.temperatur_min","value": "25.0"},{"id": 61,"key": "kedaireka.waktu_oven_max","value": "360"},{"id": 60,"key": "kedaireka.waktu_oven_min","value": "30"}]}
+    // mengambil data dari array json
+    // Stream& input;
+
+    DynamicJsonDocument doc(1536);
+
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if (error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.f_str());
+      return;
+    }
+
+    const char* jsonrpc = doc["jsonrpc"]; // "2.0"
+    int id = doc["id"]; // 1
+
+    for (JsonObject result_item : doc["result"].as<JsonArray>()) {
+      int result_item_id = result_item["id"]; // 62, 55, 54, 59, 58, 57, 56, 63, 53, 52, 61, 60
+      const char* result_item_key = result_item["key"]; // "kedaireka.kelas_pln", "kedaireka.rh_max", ...
+      const char* result_item_value = result_item["value"]; // "1", "80", "60", "80", "60", "30", "25.0", ...
+    }
+    suhu_min = doc["result"][10]["value"];
+    suhu_max = doc["result"][9]["value"];
+  }
+}
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+//  = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 void setup()
 {
@@ -230,18 +310,38 @@ void loop()
 {
   delay(100);
 
-  temperatur_oven = thermocouple.readCelsius();
-  float tegangaan = pzem.voltage();
-  float arus = pzem.current();
-  float daya = pzem.power();
-  float biaya_listrik = pzem.energy();
-  bool status_power = arus > 0.1 ? true : false;
-  mainDisplay("Oven 1", temperatur_oven, tegangaan, arus, daya);
+  // update data
+  temperatur    = thermocouple.readCelsius();
+  tegangan      = pzem.voltage();
+  arus          = pzem.current();
+  daya          = pzem.power();
+  biaya_listrik = pzem.energy();
+  status_power  = arus > 0.1 ? true : false;
+  // mainDisplay("Oven 1", temperatur, tegangan, arus, daya);
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(10, 10);
+  display.println("Suhu Min : " + String(suhu_min));
+  display.setCursor(10, 20);
+  display.println("Suhu Max : " + String(suhu_max));
+  display.display();
+  delay(2000);
+
+  if (temperatur < suhu_max || temperatur > suhu_min)
+  {
+    mainDisplay("Normal", temperatur, tegangan, arus, daya);
+  }
+  else
+  {
+    alertDisplay();
+    buzz(BUZZPIN, 700, 3);
+  }
 
   if (millis() - lastTime > timerDelay)
   {
     lastTime = millis();
-    sendData(temperatur_oven,
+    sendData(temperatur,
              kelembapan,
              arus,
              biaya_listrik,
@@ -253,7 +353,7 @@ void loop()
              status_power,
              t_off,
              t_on,
-             tegangaan,
+             tegangan,
              total_produksi,
              volume);
     
