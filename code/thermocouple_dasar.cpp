@@ -28,7 +28,7 @@ DynamicJsonDocument doc(1024);
 
 // Time Setting
 unsigned long lastTime    = 0;
-unsigned long timerDelay  = 10000;  // delay waktu pengiriman data
+unsigned long timerDelay  = 60000*30;  // delay waktu pengiriman data
 unsigned long displayTime = 2000;
 
 // PIN Declaration
@@ -54,8 +54,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Node Name
 String lokasi         = "Ruang Oven";
-String node           = "Node06";
-String nama_mesin     = "Mesin Oven";
+String node           = "Node02";
+String nama_mesin     = "Mesin Oven 1";
 String nodeName       = node + "-" + nama_mesin;
 String accessPointIP  = "192.168.4.1";
 
@@ -64,7 +64,7 @@ float suhu_min  = 25;
 float suhu_max  = 300;
 
 int bahan_id    = 1;
-int oven_id     = 2;
+int oven_id     = 4;
 int pegawai_id  = 7;
 
 // Post Data
@@ -146,17 +146,7 @@ void mainDisplay(String status, float temperatur, float tegangan, float arus, fl
   display.println("Daya     : " + String(daya) + " W");
   display.display();
 }
-void alertDisplay()
-{
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println("Alert!!!");
-  display.setCursor(0, 10);
-  display.println(WiFi.localIP());
-  display.display();
-}
+
 
 // Send Data Function
 void sendData(float temperatur,
@@ -317,27 +307,10 @@ void loop()
   daya          = pzem.power();
   biaya_listrik = pzem.energy();
   status_power  = arus > 0.1 ? true : false;
-  // mainDisplay("Oven 1", temperatur, tegangan, arus, daya);
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(10, 10);
-  display.println("Suhu Min : " + String(suhu_min));
-  display.setCursor(10, 20);
-  display.println("Suhu Max : " + String(suhu_max));
-  display.display();
-  delay(2000);
+  mainDisplay("Oven 1", temperatur, tegangan, arus, daya);
 
-  if (temperatur < suhu_max || temperatur > suhu_min)
-  {
-    mainDisplay("Normal", temperatur, tegangan, arus, daya);
-  }
-  else
-  {
-    alertDisplay();
-    buzz(BUZZPIN, 700, 3);
-  }
 
+ 
   if (millis() - lastTime > timerDelay)
   {
     lastTime = millis();

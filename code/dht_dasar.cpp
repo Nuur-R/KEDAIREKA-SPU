@@ -31,18 +31,19 @@ unsigned long lastTime    = 0;
 unsigned long timerDelay  = 60000*30;  // delay waktu pengiriman data
 unsigned long displayTime = 2000;
 
+
+#define DHTTYPE DHT22
 // PIN Declaration
-#define BUZZPIN D4
-int thermoSO  = D6;
-int thermoCS  = D5;
-int thermoCSK = D0;
+#define BUZZPIN D0
+#define DHTPIN D4
 #if !defined(PZEM_RX_PIN) && !defined(PZEM_TX_PIN)
 #define PZEM_RX_PIN D8
 #define PZEM_TX_PIN D7
 #endif
 
 // MAX6675 Declaration
-MAX6675 thermocouple(thermoCSK, thermoCS, thermoSO);
+DHT_Unified dht(DHTPIN, DHTTYPE);
+uint32_t delayMS;
 // PZEM Declaration
 SoftwareSerial pzemSWSerial(PZEM_RX_PIN, PZEM_TX_PIN);
 PZEM004Tv30 pzem(pzemSWSerial);
@@ -53,18 +54,18 @@ PZEM004Tv30 pzem(pzemSWSerial);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Node Name
-String lokasi         = "Ruang Mixing";
-String node           = "Node06";
-String nama_mesin     = "Mesin Mixing";
+String lokasi         = "Ruang Packaging";
+String node           = "Node05";
+String nama_mesin     = "Mesin Vertikal";
 String nodeName       = node + "-" + nama_mesin;
 String accessPointIP  = "192.168.4.1";
 
 // get data
 float suhu_min  = 25;
-float suhu_max  = 300;
+float suhu_max  = 30;
 
 int bahan_id    = 1;
-int oven_id     = 2;
+int oven_id     = 3;
 int pegawai_id  = 7;
 
 // Post Data
@@ -128,22 +129,22 @@ void wifiConnectedDisplay()
   display.println(WiFi.localIP());
   display.display();
 }
-void mainDisplay(String status, float temperatur, float tegangan, float arus, float daya)
+void mainDisplay(float temperatur, float kelembapan, float tegangan, float arus, float daya)
 {
   display.clearDisplay();
   display.setTextSize(2);
   display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println(status);
   display.setTextSize(1);
+  display.setCursor(0, 10);
+  display.println("Suhu       : " + String(temperatur) + " C");
   display.setCursor(0, 20);
-  display.println("Suhu     : " + String(temperatur) + " C");
+  display.println("Kelembapan : " + String(kelembapan) + " %");
   display.setCursor(0, 30);
-  display.println("Tegangan : " + String(tegangan) + " V");
+  display.println("Tegangan   : " + String(tegangan) + " V");
   display.setCursor(0, 40);
-  display.println("Arus     : " + String(arus) + " A");
+  display.println("Arus       : " + String(arus) + " A");
   display.setCursor(0, 50);
-  display.println("Daya     : " + String(daya) + " W");
+  display.println("Daya       : " + String(daya) + " W");
   display.display();
 }
 void alertDisplay()
@@ -157,7 +158,6 @@ void alertDisplay()
   display.println(WiFi.localIP());
   display.display();
 }
-
 
 // Send Data Function
 void sendData(float temperatur,
@@ -303,6 +303,12 @@ void setup()
   Serial.println("local ip");
   wifiConnectedDisplay();
   buzz(BUZZPIN, 700, 3);
+
+  dht.begin();
+  sensor_t sensor;
+  dht.temperature().getSensor(&sensor);
+  dht.humidity().getSensor(&sensor);
+
   Serial.println(WiFi.localIP());
   Serial.println("Timer set to 20 seconds (timerDelay variable), it will take 20 seconds before publishing the first reading.");
 }
@@ -312,13 +318,42 @@ void loop()
   delay(100);
 
   // update data
-  temperatur    = thermocouple.readCelsius();
+  delay(delayMS);
+  sensors_event_t event;
+  dht.temperature().getEvent(&event);
+  if (isnan(event.temperature))
+  {
+    Serial.println(F("Error reading temperature!"));
+  }
+  else
+  {
+    temperatur = event.temperature;
+  }
+  dht.humidity().getEvent(&event);
+  if (isnan(event.relative_humidity))
+  {
+    Serial.println(F("Error reading humidity!"));
+  }
+  else
+  {
+    kelembapan = event.relative_humidity;
+  }
   tegangan      = pzem.voltage();
   arus          = pzem.current();
   daya          = pzem.power();
   biaya_listrik = pzem.energy();
   status_power  = arus > 0.1 ? true : false;
-  mainDisplay("Mixing", temperatur, tegangan, arus, daya); 
+
+  if (temperatur < suhu_max || temperatur > suhu_min)
+  {
+    mainDisplay(temperatur, kelembapan, tegangan, arus, daya);
+  }
+  else
+  {
+    alertDisplay();
+    buzz(BUZZPIN, 700, 3);
+  }
+
   if (millis() - lastTime > timerDelay)
   {
     lastTime = millis();
